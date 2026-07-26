@@ -772,5 +772,39 @@ main::-webkit-scrollbar-thumb {
 main::-webkit-scrollbar-track {
   background: transparent !important;
 }
+/* FORCE PERMANENT VISIBLE VERTICAL SCROLLBAR */
+html, body, .chat-box, #chatBox, main {
+  overflow-y: scroll !important;
+  scrollbar-width: thin !important;
+  scrollbar-color: #00a878 rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Force Always Show on Webkit (Chrome/Mobile Web) */
+.chat-box::-webkit-scrollbar,
+#chatBox::-webkit-scrollbar,
+main::-webkit-scrollbar,
+::-webkit-scrollbar {
+  width: 8px !important;
+  height: 8px !important;
+  display: block !important;
+}
+
+.chat-box::-webkit-scrollbar-thumb,
+#chatBox::-webkit-scrollbar-thumb,
+main::-webkit-scrollbar-thumb,
+::-webkit-scrollbar-thumb {
+  background: #00a878 !important;
+  border-radius: 4px !important;
+  min-height: 50px !important;
+}
+
+.chat-box::-webkit-scrollbar-track,
+#chatBox::-webkit-scrollbar-track,
+main::-webkit-scrollbar-track,
+::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.08) !important;
+  border-radius: 4px !important;
+}
+
 
 
