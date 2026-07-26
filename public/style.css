@@ -805,6 +805,40 @@ main::-webkit-scrollbar-track,
   background: rgba(0, 0, 0, 0.08) !important;
   border-radius: 4px !important;
 }
+/* ==========================================
+   PERMANENTLY VISIBLE ALWAYS-ON SCROLLBAR
+   ========================================== */
+
+/* 1. Force container to always reserve space for scrollbar */
+.chat-box, #chatBox, main {
+  overflow-y: scroll !important; /* Forces scrollbar gutter to stay visible */
+  scrollbar-gutter: stable !important; /* Prevents layout shifting */
+}
+
+/* 2. Force persistent thumb and track styling */
+.chat-box::-webkit-scrollbar,
+#chatBox::-webkit-scrollbar,
+main::-webkit-scrollbar {
+  width: 10px !important;
+  display: block !important;
+  visibility: visible !important;
+}
+
+.chat-box::-webkit-scrollbar-thumb,
+#chatBox::-webkit-scrollbar-thumb,
+main::-webkit-scrollbar-thumb {
+  background: #00a878 !important;
+  border-radius: 6px !important;
+  visibility: visible !important;
+}
+
+.chat-box::-webkit-scrollbar-track,
+#chatBox::-webkit-scrollbar-track,
+main::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.08) !important;
+  border-radius: 6px !important;
+  visibility: visible !important;
+}
 
 
 
