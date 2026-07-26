@@ -742,3 +742,35 @@ mark.chat-highlight {
   border-radius: 3px;
   font-weight: bold;
 }
+/* ==========================================
+   SAFE VERTICAL SCROLLBAR STYLING ONLY
+   ========================================== */
+
+/* Vertical Scrollbar (Chat Box - Up & Down) */
+.chat-box, #chatBox, main {
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch !important;
+}
+
+/* Vertical Scrollbar Design */
+.chat-box::-webkit-scrollbar,
+#chatBox::-webkit-scrollbar,
+main::-webkit-scrollbar {
+  width: 5px !important;
+  display: block !important;
+}
+
+.chat-box::-webkit-scrollbar-thumb,
+#chatBox::-webkit-scrollbar-thumb,
+main::-webkit-scrollbar-thumb {
+  background: var(--accent-green, #00a878) !important;
+  border-radius: 10px !important;
+}
+
+.chat-box::-webkit-scrollbar-track,
+#chatBox::-webkit-scrollbar-track,
+main::-webkit-scrollbar-track {
+  background: transparent !important;
+}
+
+
