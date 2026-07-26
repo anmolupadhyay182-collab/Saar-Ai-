@@ -612,3 +612,18 @@ if (clearMemoryBtn) {
     }
   });
 }
+// Global Click / Touch Event to Trigger Scrollbar Visibility
+document.addEventListener('click', forceScrollbarVisibility);
+document.addEventListener('touchstart', forceScrollbarVisibility);
+
+function forceScrollbarVisibility() {
+  const chatContainers = document.querySelectorAll('.chat-box, #chatBox, main');
+  chatContainers.forEach(container => {
+    container.classList.add('show-scrollbar');
+    if (container.scrollTop > 0) {
+      container.scrollTop += 0.5;
+      container.scrollTop -= 0.5;
+    }
+  });
+}
+
