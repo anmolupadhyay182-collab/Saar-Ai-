@@ -839,6 +839,28 @@ main::-webkit-scrollbar-track {
   border-radius: 6px !important;
   visibility: visible !important;
 }
+/* Show scrollbar dynamically when active class is added */
+.chat-box.show-scrollbar, 
+#chatBox.show-scrollbar,
+main.show-scrollbar {
+  overflow-y: scroll !important;
+  scrollbar-width: thin !important;
+  scrollbar-color: #00a878 transparent !important;
+}
+
+.chat-box.show-scrollbar::-webkit-scrollbar,
+#chatBox.show-scrollbar::-webkit-scrollbar,
+main.show-scrollbar::-webkit-scrollbar {
+  width: 8px !important;
+  display: block !important;
+}
+
+.chat-box.show-scrollbar::-webkit-scrollbar-thumb,
+#chatBox.show-scrollbar::-webkit-scrollbar-thumb,
+main.show-scrollbar::-webkit-scrollbar-thumb {
+  background: #00a878 !important;
+  border-radius: 10px !important;
+}
 
 
 
