@@ -1,1 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>SAAR AI</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <!-- Highlight.js for Code Highlighting -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/atom-one-dark.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
+  <!-- Marked.js for Markdown Parsing -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+</head>
+<body data-theme="light">
+  <div class="app-container">
+    
+    <!-- Sidebar Overlay & Drawer -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <div class="brand">
+          <img src="logo.png" alt="SAAR AI Logo" class="brand-logo-img" />
+          <span class="brand-title">SAAR AI</span>
+        </div>
+        <button class="icon-btn" id="closeSidebarBtn"><i class="fa-solid fa-xmark"></i></button>
+      </div>
 
+      <button class="new-chat-btn" id="newChatBtn">
+        <i class="fa-solid fa-plus"></i> New Chat
+      </button>
+
+      <div class="sidebar-section">
+        <div class="section-label">THEME</div>
+        <div class="theme-grid">
+          <button class="theme-btn active" data-theme="light"><i class="fa-solid fa-sun"></i> Light</button>
+          <button class="theme-btn" data-theme="dark"><i class="fa-solid fa-moon"></i> Dark</button>
+          <button class="theme-btn" data-theme="ocean"><i class="fa-solid fa-water"></i> Ocean</button>
+          <button class="theme-btn" data-theme="cyber"><i class="fa-solid fa-bolt"></i> Cyber</button>
+        </div>
+      </div>
+
+      <div class="sidebar-section recents-section">
+        <div class="search-box-container" style="padding: 0 4px 10px 4px;">
+          <div class="search-input-wrapper" style="position: relative; display: flex; align-items: center;">
+            <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 12px; color: var(--text-sub); font-size: 13px;"></i>
+            <input type="text" id="searchChatsInput" placeholder="Search chats..." style="width: 100%; padding: 8px 12px 8px 32px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--input-bg); color: var(--text-main); font-size: 13px; outline: none;" />
+          </div>
+        </div>
+        <div class="section-label">RECENTS</div>
+        <div class="recents-list" id="recentsList">
+          <!-- Recent chats rendered here -->
+        </div>
+      </div>
+
+      <div class="sidebar-footer">
+        SAAR AI Created by Anmol Upadhyay
+      </div>
+    </aside>
+
+    <!-- Header -->
+    <header class="app-header">
+      <div class="header-left">
+        <button class="icon-btn" id="menuBtn"><i class="fa-solid fa-bars"></i></button>
+        <img src="logo.png" alt="SAAR AI Logo" class="brand-logo-img" />
+        <span class="brand-title">SAAR AI</span>
+      </div>
+      <div class="header-right" style="display: flex; gap: 8px; align-items: center;">
+        <button class="icon-btn" id="findInChatBtn" title="Find word in chat"><i class="fa-solid fa-magnifying-glass"></i></button>
+        <button class="icon-btn" id="exportChatBtn" title="Download Chat"><i class="fa-solid fa-download"></i></button>
+        <button class="icon-btn" id="clearChatBtn" title="Clear Chat"><i class="fa-solid fa-rotate-right"></i></button>
+      </div>
+    </header>
+
+    <!-- Floating Find Word Bar -->
+    <div class="find-word-bar" id="findWordBar">
+      <i class="fa-solid fa-magnifying-glass find-icon"></i>
+      <input type="text" id="findWordInput" placeholder="Find word in response..." />
+      <span class="find-count" id="findCount">0/0</span>
+      <button class="find-close-btn" id="closeFindBarBtn"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+
+    <!-- Floating Audio Player Bar (ChatGPT Style) -->
+    <div class="floating-voice-player" id="floatingVoicePlayer">
+      <button class="player-btn" id="audioToggleBtn">
+        <i class="fa-solid fa-spinner fa-spin" id="audioStatusSpinner"></i>
+        <i class="fa-solid fa-pause" id="audioPauseIcon" style="display: none;"></i>
+        <i class="fa-solid fa-play" id="audioPlayIcon" style="display: none;"></i>
+      </button>
+      
+      <!-- Wave / Processing Indicator -->
+      <div class="audio-wave-container" id="audioWaveContainer">
+        <div class="wave-bar"></div>
+        <div class="wave-bar"></div>
+        <div class="wave-bar"></div>
+        <div class="wave-bar"></div>
+        <div class="wave-bar"></div>
+      </div>
+
+      <!-- Speech Progress Bar -->
+      <div class="audio-progress-bar-wrap">
+        <div class="audio-progress-bar" id="audioProgressBar"></div>
+      </div>
+
+      <button class="player-close-btn" id="closeAudioPlayerBtn" title="Close">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+
+    <!-- Chat Box Container -->
+    <main class="chat-box" id="chatBox">
+      <div class="welcome-screen" id="welcomeScreen">
+        <div class="badge">⚡ Saar Superfast Ai</div>
+        <h1 class="greeting-text">Hello, I'm SAAR AI.<br>How can I help you today?</h1>
+        <div class="suggestions">
+          <div class="suggestion-card" onclick="useSuggestion('Explain quantum computing simply')">
+            <div class="card-title">Explain quantum computing</div>
+            <div class="card-sub">In simple terms</div>
+          </div>
+          <div class="suggestion-card" onclick="useSuggestion('Write a Python script for web scraping')">
+            <div class="card-title">Python web scraper</div>
+            <div class="card-sub">Code example</div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Input Bar Area -->
+    <footer class="input-container">
+      <form class="chat-form" id="chatForm">
+        <textarea id="userInput" rows="1" placeholder="Ask SAAR AI..."></textarea>
+        <button type="button" class="icon-btn mic-btn" title="Voice Search"><i class="fa-solid fa-microphone"></i></button>
+        <button type="submit" class="send-btn" id="sendBtn" disabled>
+          <i class="fa-solid fa-arrow-up"></i>
+        </button>
+      </form>
+      <div class="footer-credit">SAAR AI Created by Anmol Upadhyay</div>
+    </footer>
+
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
