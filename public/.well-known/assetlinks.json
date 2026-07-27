@@ -1,8 +1,0 @@
-[{
-      "relation": ["delegate_permission/common.handle_all_urls"],
-      "target": {
-        "namespace": "android_app",
-        "package_name": "com.onrender.saar_ai_m3hi.twa",
-        "sha256_cert_fingerprints": ["C6:1F:5A:21:40:70:62:07:24:10:A6:85:02:AA:F4:AA:5D:A9:E4:5B:4A:8D:33:19:C9:EA:2E:76:92:CD:66:CC"]
-      }
-    }]
