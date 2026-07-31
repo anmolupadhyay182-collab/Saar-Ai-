@@ -244,7 +244,7 @@ function wrapCodeBlocks(element) {
   });
 }
 
-/* 🔍 RELIABLE & ACCURATE IN-CHAT SEARCH ENGINE */
+/* 🔍 IN-CHAT SEARCH ENGINE */
 findInChatBtn.addEventListener('click', () => {
   if (findWordBar.classList.contains('active')) {
     closeFindBar();
@@ -281,7 +281,6 @@ function highlightInElement(element, query) {
     NodeFilter.SHOW_TEXT,
     {
       acceptNode: function(node) {
-        // Skip code tags, buttons, or action bars
         if (node.parentNode.closest('pre') || node.parentNode.closest('button') || node.parentNode.closest('.msg-actions')) {
           return NodeFilter.FILTER_REJECT;
         }
@@ -344,7 +343,6 @@ findWordInput.addEventListener('input', () => {
 
   findCount.textContent = `${totalMatches} match${totalMatches !== 1 ? 'es' : ''}`;
 
-  // Smooth scroll to the first matched highlighted word
   const firstMatch = chatBox.querySelector('mark.chat-highlight');
   if (firstMatch) {
     firstMatch.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -495,6 +493,7 @@ function appendMessageUI(sender, content, isLoading = false) {
   return { msgRow, msgContent };
 }
 
+/* UPDATED SEND MESSAGE WITH FULL CHAT CONTEXT/HISTORY SUPPORT */
 async function sendMessage(message) {
   if (!currentChatId) {
     currentChatId = 'chat_' + Date.now();
@@ -519,10 +518,14 @@ async function sendMessage(message) {
   const { msgRow: loadingRow } = appendMessageUI('ai', '', true);
 
   try {
+    // Single message ki jagah, active tab ki poori chat history server ko bhej rahe hain
     const response = await fetch('/api/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message })
+      body: JSON.stringify({ 
+        message: message,
+        history: activeSession.messages 
+      })
     });
 
     const data = await response.json();
