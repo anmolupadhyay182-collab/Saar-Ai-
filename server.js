@@ -17,22 +17,37 @@ app.use(express.static(path.join(__dirname, 'public')));
 // Initialize Groq API Client
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
-// Chat API Route (Without Memory)
+// Chat API Route (With Tab/Session Memory Support)
 app.post('/api/chat', async (req, res) => {
   try {
-    const { message } = req.body;
+    const { message, history } = req.body;
     if (!message) {
       return res.status(400).json({ error: "Message is required." });
     }
 
     const systemInstruction = "You are SAAR AI, a helpful, intelligent, and friendly AI assistant created by Anmol Upadhyay. Respond concisely and cleanly in Markdown.";
 
-    // Call Groq API
+    // Groq ke format me messages array taiyar karein
+    const apiMessages = [
+      { role: 'system', content: systemInstruction }
+    ];
+
+    // Agar frontend se history mili hai to use Groq roles me convert karein
+    if (history && Array.isArray(history)) {
+      history.forEach(msg => {
+        apiMessages.push({
+          role: msg.sender === 'user' ? 'user' : 'assistant',
+          content: msg.content
+        });
+      });
+    } else {
+      // Backup fallback agar history na bheji gayi ho
+      apiMessages.push({ role: 'user', content: message });
+    }
+
+    // Call Groq API with full conversation context
     const chatCompletion = await groq.chat.completions.create({
-      messages: [
-        { role: 'system', content: systemInstruction },
-        { role: 'user', content: message }
-      ],
+      messages: apiMessages,
       model: 'llama-3.3-70b-versatile',
     });
 
@@ -49,3 +64,4 @@ app.post('/api/chat', async (req, res) => {
 app.listen(PORT, () => {
   console.log(`SAAR AI Server running on http://localhost:${PORT}`);
 });
+  
