@@ -600,18 +600,25 @@ function appendMessageUI(sender, content, isLoading = false, msgIndex = null) {
 /* 📱 LONG PRESS CONTEXT MENU SETUP FOR USER MESSAGES */
 function setupUserMessageLongPress(msgContent, textSpan, content, msgIndex) {
   let pressTimer = null;
+  let touchCoords = { x: 0, y: 0 };
 
-  const startPress = () => {
+  const startPress = (e) => {
+    if (e.touches && e.touches[0]) {
+      touchCoords = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    } else {
+      touchCoords = { x: e.clientX, y: e.clientY };
+    }
+
     pressTimer = setTimeout(() => {
-      openUserContextMenu(msgContent, textSpan, content, msgIndex);
-    }, 500); // 500ms press and hold
+      openUserContextMenu(msgContent, textSpan, content, msgIndex, touchCoords);
+    }, 450);
   };
 
   const cancelPress = () => {
     if (pressTimer) clearTimeout(pressTimer);
   };
 
-  msgContent.addEventListener('touchstart', startPress);
+  msgContent.addEventListener('touchstart', startPress, { passive: true });
   msgContent.addEventListener('touchend', cancelPress);
   msgContent.addEventListener('touchmove', cancelPress);
 
@@ -620,27 +627,39 @@ function setupUserMessageLongPress(msgContent, textSpan, content, msgIndex) {
   msgContent.addEventListener('mouseleave', cancelPress);
 }
 
-function openUserContextMenu(msgContent, textSpan, content, msgIndex) {
+function openUserContextMenu(msgContent, textSpan, content, msgIndex, coords) {
   if (document.querySelector('.user-menu-overlay')) return;
 
   const overlay = document.createElement('div');
   overlay.classList.add('user-menu-overlay');
 
-  overlay.innerHTML = `
-    <div class="user-context-menu">
-      <button class="context-menu-item edit-option">
-        <i class="fa-regular fa-pen-to-square"></i> Edit Message
-      </button>
-      <button class="context-menu-item copy-option">
-        <i class="fa-regular fa-copy"></i> Copy Text
-      </button>
-    </div>
+  const menu = document.createElement('div');
+  menu.classList.add('user-context-menu');
+  menu.innerHTML = `
+    <button class="context-menu-item edit-option">
+      <i class="fa-regular fa-pen-to-square"></i> Edit Message
+    </button>
+    <button class="context-menu-item copy-option">
+      <i class="fa-regular fa-copy"></i> Copy Text
+    </button>
   `;
 
+  overlay.appendChild(menu);
   document.body.appendChild(overlay);
 
-  const editBtn = overlay.querySelector('.edit-option');
-  const copyBtn = overlay.querySelector('.copy-option');
+  const menuWidth = 160;
+  const menuHeight = 90;
+  let left = coords.x - menuWidth + 20;
+  let top = coords.y + 10;
+
+  if (left < 10) left = 10;
+  if (top + menuHeight > window.innerHeight) top = coords.y - menuHeight - 10;
+
+  menu.style.left = `${left}px`;
+  menu.style.top = `${top}px`;
+
+  const editBtn = menu.querySelector('.edit-option');
+  const copyBtn = menu.querySelector('.copy-option');
 
   editBtn.addEventListener('click', () => {
     overlay.remove();
@@ -854,5 +873,5 @@ if (clearMemoryBtn) {
       }
     }
   });
-                              }
-    
+}
+  
