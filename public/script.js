@@ -89,13 +89,16 @@ newChatBtn.addEventListener('click', () => {
 });
 
 // Search Filter Listener for Sidebar
-searchChatsInput.addEventListener('input', (e) => {
-  const query = e.target.value.toLowerCase().trim();
-  renderRecents(query);
-});
+if (searchChatsInput) {
+  searchChatsInput.addEventListener('input', (e) => {
+    const query = e.target.value.toLowerCase().trim();
+    renderRecents(query);
+  });
+}
 
 // Render Sessions in Sidebar (Pinned chats on TOP)
 function renderRecents(filterQuery = '') {
+  if (!recentsList) return;
   recentsList.innerHTML = '';
 
   const filteredChats = chats.filter(chat => 
@@ -137,7 +140,7 @@ function renderRecents(filterQuery = '') {
       e.stopPropagation();
       chat.pinned = !chat.pinned;
       saveChats();
-      renderRecents(searchChatsInput.value.toLowerCase().trim());
+      renderRecents(searchChatsInput ? searchChatsInput.value.toLowerCase().trim() : '');
     });
 
     item.querySelector('.delete-btn').addEventListener('click', (e) => {
@@ -147,7 +150,7 @@ function renderRecents(filterQuery = '') {
       if (currentChatId === chat.id) {
         createNewChat();
       } else {
-        renderRecents(searchChatsInput.value.toLowerCase().trim());
+        renderRecents(searchChatsInput ? searchChatsInput.value.toLowerCase().trim() : '');
       }
     });
 
@@ -169,7 +172,15 @@ function loadChatSession(id) {
     appendMessageUI(msg.sender, msg.content, false, index);
   });
 
-  renderRecents(searchChatsInput.value.toLowerCase().trim());
+  renderRecents(searchChatsInput ? searchChatsInput.value.toLowerCase().trim() : '');
+}
+
+function reloadCurrentChatUI() {
+  if (currentChatId) {
+    loadChatSession(currentChatId);
+  } else {
+    createNewChat();
+  }
 }
 
 function saveChats() {
@@ -182,15 +193,20 @@ function escapeHtml(text) {
 }
 
 // Marked Setup
-marked.setOptions({
-  highlight: function (code, lang) {
-    if (lang && hljs.getLanguage(lang)) {
-      return hljs.highlight(code, { language: lang }).value;
-    }
-    return hljs.highlightAuto(code).value;
-  },
-  breaks: true
-});
+if (typeof marked !== 'undefined') {
+  marked.setOptions({
+    highlight: function (code, lang) {
+      if (typeof hljs !== 'undefined') {
+        if (lang && hljs.getLanguage(lang)) {
+          return hljs.highlight(code, { language: lang }).value;
+        }
+        return hljs.highlightAuto(code).value;
+      }
+      return code;
+    },
+    breaks: true
+  });
+}
 
 userInput.addEventListener('input', () => {
   userInput.style.height = 'auto';
@@ -209,6 +225,63 @@ chatForm.addEventListener('submit', (e) => {
   const message = userInput.value.trim();
   if (message) sendMessage(message);
 });
+
+/* 🚀 SEND MESSAGE ENGINE */
+async function sendMessage(text) {
+  stopSpeech();
+  closeFindBar();
+
+  if (!currentChatId) {
+    currentChatId = Date.now().toString();
+    const newChatSession = {
+      id: currentChatId,
+      title: text.length > 28 ? text.substring(0, 28) + '...' : text,
+      messages: [],
+      pinned: false
+    };
+    chats.unshift(newChatSession);
+  }
+
+  const activeSession = chats.find(c => c.id === currentChatId);
+  activeSession.messages.push({ sender: 'user', content: text });
+  saveChats();
+
+  const userMsgIndex = activeSession.messages.length - 1;
+  appendMessageUI('user', text, false, userMsgIndex);
+
+  userInput.value = '';
+  userInput.style.height = 'auto';
+  sendBtn.disabled = true;
+
+  const { msgRow: loadingRow } = appendMessageUI('ai', '', true);
+
+  try {
+    const response = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        message: text,
+        history: activeSession.messages
+      })
+    });
+
+    const data = await response.json();
+    loadingRow.remove();
+
+    let replyText = data.reply || ('⚠️ Error: ' + (data.error || 'Failed to generate response.'));
+
+    activeSession.messages.push({ sender: 'ai', content: replyText });
+    saveChats();
+
+    const aiMsgIndex = activeSession.messages.length - 1;
+    appendMessageUI('ai', replyText, false, aiMsgIndex);
+    renderRecents(searchChatsInput ? searchChatsInput.value.toLowerCase().trim() : '');
+
+  } catch (err) {
+    loadingRow.remove();
+    appendMessageUI('ai', '⚠️ Error: ' + err.message);
+  }
+}
 
 // Code Blocks Helper
 function wrapCodeBlocks(element) {
@@ -251,21 +324,24 @@ function wrapCodeBlocks(element) {
 }
 
 /* 🔍 IN-CHAT SEARCH ENGINE */
-findInChatBtn.addEventListener('click', () => {
-  if (findWordBar.classList.contains('active')) {
-    closeFindBar();
-  } else {
-    findWordBar.classList.add('active');
-    findWordInput.focus();
-  }
-});
+if (findInChatBtn) {
+  findInChatBtn.addEventListener('click', () => {
+    if (findWordBar.classList.contains('active')) {
+      closeFindBar();
+    } else {
+      findWordBar.classList.add('active');
+      findWordInput.focus();
+    }
+  });
+}
 
-closeFindBarBtn.addEventListener('click', closeFindBar);
+if (closeFindBarBtn) closeFindBarBtn.addEventListener('click', closeFindBar);
 
 function closeFindBar() {
+  if (!findWordBar) return;
   findWordBar.classList.remove('active');
-  findWordInput.value = '';
-  findCount.textContent = '0/0';
+  if (findWordInput) findWordInput.value = '';
+  if (findCount) findCount.textContent = '0/0';
   removeHighlights();
 }
 
@@ -331,29 +407,31 @@ function highlightInElement(element, query) {
   return count;
 }
 
-findWordInput.addEventListener('input', () => {
-  removeHighlights();
-  const query = findWordInput.value.trim();
+if (findWordInput) {
+  findWordInput.addEventListener('input', () => {
+    removeHighlights();
+    const query = findWordInput.value.trim();
 
-  if (!query) {
-    findCount.textContent = '0/0';
-    return;
-  }
+    if (!query) {
+      findCount.textContent = '0/0';
+      return;
+    }
 
-  let totalMatches = 0;
-  const msgContents = chatBox.querySelectorAll('.msg-content');
+    let totalMatches = 0;
+    const msgContents = chatBox.querySelectorAll('.msg-content');
 
-  msgContents.forEach(msg => {
-    totalMatches += highlightInElement(msg, query);
+    msgContents.forEach(msg => {
+      totalMatches += highlightInElement(msg, query);
+    });
+
+    findCount.textContent = `${totalMatches} match${totalMatches !== 1 ? 'es' : ''}`;
+
+    const firstMatch = chatBox.querySelector('mark.chat-highlight');
+    if (firstMatch) {
+      firstMatch.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
   });
-
-  findCount.textContent = `${totalMatches} match${totalMatches !== 1 ? 'es' : ''}`;
-
-  const firstMatch = chatBox.querySelector('mark.chat-highlight');
-  if (firstMatch) {
-    firstMatch.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  }
-});
+}
 
 /* Floating Voice Player Controllers */
 function startSpeech(text, offsetChar = 0) {
@@ -370,11 +448,11 @@ function startSpeech(text, offsetChar = 0) {
   }
 
   isPaused = false;
-  floatingVoicePlayer.classList.add('active');
-  audioStatusSpinner.style.display = 'inline-block';
-  audioPauseIcon.style.display = 'none';
-  audioPlayIcon.style.display = 'none';
-  audioWaveContainer.classList.remove('paused');
+  if (floatingVoicePlayer) floatingVoicePlayer.classList.add('active');
+  if (audioStatusSpinner) audioStatusSpinner.style.display = 'inline-block';
+  if (audioPauseIcon) audioPauseIcon.style.display = 'none';
+  if (audioPlayIcon) audioPlayIcon.style.display = 'none';
+  if (audioWaveContainer) audioWaveContainer.classList.remove('paused');
 
   const textToSpeakNow = currentTextToSpeak.substring(offsetChar);
   const utterance = new SpeechSynthesisUtterance(textToSpeakNow);
@@ -383,16 +461,16 @@ function startSpeech(text, offsetChar = 0) {
   const totalChars = currentTextToSpeak.length;
 
   utterance.onstart = () => {
-    audioStatusSpinner.style.display = 'none';
-    audioPauseIcon.style.display = 'inline-block';
-    audioPlayIcon.style.display = 'none';
+    if (audioStatusSpinner) audioStatusSpinner.style.display = 'none';
+    if (audioPauseIcon) audioPauseIcon.style.display = 'inline-block';
+    if (audioPlayIcon) audioPlayIcon.style.display = 'none';
   };
 
   utterance.onboundary = (event) => {
     if (event.name === 'word') {
       currentSpeechPosition = offsetChar + event.charIndex;
       let progress = Math.min(100, Math.round((currentSpeechPosition / totalChars) * 100));
-      audioProgressBar.style.width = progress + '%';
+      if (audioProgressBar) audioProgressBar.style.width = progress + '%';
     }
   };
 
@@ -414,11 +492,11 @@ function stopSpeech() {
   if ('speechSynthesis' in window) {
     window.speechSynthesis.cancel();
   }
-  floatingVoicePlayer.classList.remove('active');
-  audioProgressBar.style.width = '0%';
-  audioStatusSpinner.style.display = 'none';
-  audioPauseIcon.style.display = 'none';
-  audioPlayIcon.style.display = 'none';
+  if (floatingVoicePlayer) floatingVoicePlayer.classList.remove('active');
+  if (audioProgressBar) audioProgressBar.style.width = '0%';
+  if (audioStatusSpinner) audioStatusSpinner.style.display = 'none';
+  if (audioPauseIcon) audioPauseIcon.style.display = 'none';
+  if (audioPlayIcon) audioPlayIcon.style.display = 'none';
 }
 
 function toggleSpeechPausePlay() {
@@ -427,21 +505,21 @@ function toggleSpeechPausePlay() {
   if (!isPaused) {
     isPaused = true;
     window.speechSynthesis.cancel();
-    audioPauseIcon.style.display = 'none';
-    audioPlayIcon.style.display = 'inline-block';
-    audioWaveContainer.classList.add('paused');
+    if (audioPauseIcon) audioPauseIcon.style.display = 'none';
+    if (audioPlayIcon) audioPlayIcon.style.display = 'inline-block';
+    if (audioWaveContainer) audioWaveContainer.classList.add('paused');
   } else {
-    audioPlayIcon.style.display = 'none';
-    audioPauseIcon.style.display = 'inline-block';
-    audioWaveContainer.classList.remove('paused');
+    if (audioPlayIcon) audioPlayIcon.style.display = 'none';
+    if (audioPauseIcon) audioPauseIcon.style.display = 'inline-block';
+    if (audioWaveContainer) audioWaveContainer.classList.remove('paused');
     startSpeech(currentTextToSpeak, currentSpeechPosition);
   }
 }
 
-audioToggleBtn.addEventListener('click', toggleSpeechPausePlay);
-closeAudioPlayerBtn.addEventListener('click', stopSpeech);
+if (audioToggleBtn) audioToggleBtn.addEventListener('click', toggleSpeechPausePlay);
+if (closeAudioPlayerBtn) closeAudioPlayerBtn.addEventListener('click', stopSpeech);
 
-/* MESSAGE UI RENDERING (WITH EDIT & REGENERATE FEATURES) */
+/* MESSAGE UI RENDERING (WITH LONG PRESS CONTEXT MENU & EDIT/REGENERATE) */
 function appendMessageUI(sender, content, isLoading = false, msgIndex = null) {
   if (welcomeScreen) welcomeScreen.style.display = 'none';
 
@@ -461,7 +539,7 @@ function appendMessageUI(sender, content, isLoading = false, msgIndex = null) {
         </div>
       `;
     } else {
-      msgContent.innerHTML = marked.parse(content);
+      msgContent.innerHTML = typeof marked !== 'undefined' ? marked.parse(content) : content;
       wrapCodeBlocks(msgContent);
 
       const actionsDiv = document.createElement('div');
@@ -502,25 +580,14 @@ function appendMessageUI(sender, content, isLoading = false, msgIndex = null) {
       msgContent.appendChild(actionsDiv);
     }
   } else {
-    // User Message Content & Edit Action
+    // User Message Content & Long-Press Handler
     const textSpan = document.createElement('span');
     textSpan.classList.add('user-text');
     textSpan.textContent = content;
     msgContent.appendChild(textSpan);
 
     if (!isLoading) {
-      const userActions = document.createElement('div');
-      userActions.classList.add('user-msg-actions');
-
-      const editBtn = document.createElement('button');
-      editBtn.classList.add('edit-msg-btn');
-      editBtn.innerHTML = `<i class="fa-regular fa-pen-to-square"></i> Edit`;
-      editBtn.addEventListener('click', () => {
-        enableUserMessageEdit(msgContent, textSpan, content, msgIndex);
-      });
-
-      userActions.appendChild(editBtn);
-      msgContent.appendChild(userActions);
+      setupUserMessageLongPress(msgContent, textSpan, content, msgIndex);
     }
   }
 
@@ -528,6 +595,67 @@ function appendMessageUI(sender, content, isLoading = false, msgIndex = null) {
   chatBox.appendChild(msgRow);
   chatBox.scrollTo({ top: chatBox.scrollHeight, behavior: 'smooth' });
   return { msgRow, msgContent };
+}
+
+/* 📱 LONG PRESS CONTEXT MENU SETUP FOR USER MESSAGES */
+function setupUserMessageLongPress(msgContent, textSpan, content, msgIndex) {
+  let pressTimer = null;
+
+  const startPress = () => {
+    pressTimer = setTimeout(() => {
+      openUserContextMenu(msgContent, textSpan, content, msgIndex);
+    }, 500); // 500ms press and hold
+  };
+
+  const cancelPress = () => {
+    if (pressTimer) clearTimeout(pressTimer);
+  };
+
+  msgContent.addEventListener('touchstart', startPress);
+  msgContent.addEventListener('touchend', cancelPress);
+  msgContent.addEventListener('touchmove', cancelPress);
+
+  msgContent.addEventListener('mousedown', startPress);
+  msgContent.addEventListener('mouseup', cancelPress);
+  msgContent.addEventListener('mouseleave', cancelPress);
+}
+
+function openUserContextMenu(msgContent, textSpan, content, msgIndex) {
+  if (document.querySelector('.user-menu-overlay')) return;
+
+  const overlay = document.createElement('div');
+  overlay.classList.add('user-menu-overlay');
+
+  overlay.innerHTML = `
+    <div class="user-context-menu">
+      <button class="context-menu-item edit-option">
+        <i class="fa-regular fa-pen-to-square"></i> Edit Message
+      </button>
+      <button class="context-menu-item copy-option">
+        <i class="fa-regular fa-copy"></i> Copy Text
+      </button>
+    </div>
+  `;
+
+  document.body.appendChild(overlay);
+
+  const editBtn = overlay.querySelector('.edit-option');
+  const copyBtn = overlay.querySelector('.copy-option');
+
+  editBtn.addEventListener('click', () => {
+    overlay.remove();
+    enableUserMessageEdit(msgContent, textSpan, content, msgIndex);
+  });
+
+  copyBtn.addEventListener('click', () => {
+    navigator.clipboard.writeText(content).then(() => {
+      overlay.remove();
+    });
+  });
+
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay) overlay.remove();
+  });
 }
 
 /* ✏️ USER MESSAGE EDIT FUNCTION */
@@ -643,63 +771,6 @@ async function regenerateAiResponse(aiMsgIndex) {
     const data = await response.json();
     loadingRow.remove();
 
-        let replyText = data.reply || ('⚠️ Error: ' + (data.error || 'Failed to generate response.'));
-
-    activeSession.messages.push({ sender: 'ai', content: replyText });
-    saveChats();
-
-    reloadCurrentChatUI();
-
-  } catch (err) {
-    loadingRow.remove();
-    appendMessageUI('ai', '⚠️ Error: ' + err.message);
-  }
-}
-
-function reloadCurrentChatUI() {
-  if (currentChatId) {
-    loadChatSession(currentChatId);
-  }
-}
-
-/* SEND MESSAGE WITH FULL CHAT CONTEXT/HISTORY SUPPORT */
-async function sendMessage(message) {
-  if (!currentChatId) {
-    currentChatId = 'chat_' + Date.now();
-    chats.unshift({
-      id: currentChatId,
-      title: message.length > 25 ? message.substring(0, 25) + '...' : message,
-      pinned: false,
-      messages: []
-    });
-  }
-
-  const activeSession = chats.find(c => c.id === currentChatId);
-  activeSession.messages.push({ sender: 'user', content: message });
-  saveChats();
-  renderRecents(searchChatsInput.value.toLowerCase().trim());
-
-  reloadCurrentChatUI();
-
-  userInput.value = '';
-  userInput.style.height = 'auto';
-  sendBtn.disabled = true;
-
-  const { msgRow: loadingRow } = appendMessageUI('ai', '', true);
-
-  try {
-    const response = await fetch('/api/chat', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ 
-        message: message,
-        history: activeSession.messages 
-      })
-    });
-
-    const data = await response.json();
-    loadingRow.remove();
-
     let replyText = data.reply || ('⚠️ Error: ' + (data.error || 'Failed to generate response.'));
     
     activeSession.messages.push({ sender: 'ai', content: replyText });
@@ -747,7 +818,7 @@ clearChatBtn.addEventListener('click', createNewChat);
 
 /* Voice Mic Feature */
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-if (SpeechRecognition) {
+if (SpeechRecognition && micBtn) {
   const recognition = new SpeechRecognition();
   recognition.continuous = false;
   recognition.interimResults = false;
@@ -783,4 +854,5 @@ if (clearMemoryBtn) {
       }
     }
   });
-}
+                              }
+    
