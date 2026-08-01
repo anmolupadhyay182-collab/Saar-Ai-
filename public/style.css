@@ -899,4 +899,61 @@ main::-webkit-scrollbar-track {
   background: rgba(0, 0, 0, 0.08) !important;
   border-radius: 4px !important;
   }
-  
+  /* ==========================================
+   USER MESSAGE EDIT & CONTEXT MENU STYLING
+   ========================================== */
+.user-menu-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.25); /* Light transparent overlay, no heavy blur */
+  z-index: 9999;
+}
+
+.user-context-menu {
+  position: absolute; /* Dynamic Positioning based on finger touch */
+  background: var(--card-bg, #ffffff);
+  border: 1px solid var(--border-color, #e5e7eb);
+  border-radius: 14px;
+  padding: 6px;
+  width: 160px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  opacity: 0;
+  transform: scale(0.92);
+  animation: popupAnim 0.15s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes popupAnim {
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.context-menu-item {
+  background: transparent;
+  border: none;
+  color: var(--text-main, #111827);
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 13.5px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+  width: 100%;
+  text-align: left;
+}
+
+.context-menu-item:hover, 
+.context-menu-item:active {
+  background: var(--card-hover, #e5e7eb);
+}
+
