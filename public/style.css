@@ -427,12 +427,10 @@ body[data-theme="cyber"] .new-chat-btn {
   left: 0;
   width: 100vw;
   height: 100vh;
-  background: rgba(0, 0, 0, 0.3);
+  background: rgba(0, 0, 0, 0.15); /* Darkness bilkul halki kar di */
+  backdrop-filter: blur(2px);       /* Blur aur bhi kam (2px) kar diya */
+  -webkit-backdrop-filter: blur(2px);
   z-index: 9999;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  backdrop-filter: blur(3px);
   animation: fadeInOverlay 0.15s ease-out;
 }
 
