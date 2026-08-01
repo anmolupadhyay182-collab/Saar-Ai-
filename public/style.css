@@ -404,6 +404,9 @@ body[data-theme="cyber"] .new-chat-btn {
   font-size: 15.5px;
   max-width: 85%;
   position: relative;
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: pointer;
 }
 
 .ai .msg-content {
@@ -416,29 +419,59 @@ body[data-theme="cyber"] .new-chat-btn {
 }
 
 /* ==========================================
-   USER MESSAGE EDIT & ACTION STYLING
+   USER MESSAGE EDIT & CONTEXT MENU STYLING
    ========================================== */
-.user-msg-actions {
+.user-menu-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.3);
+  z-index: 9999;
   display: flex;
-  gap: 8px;
-  margin-top: 6px;
-  justify-content: flex-end;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(3px);
+  animation: fadeInOverlay 0.15s ease-out;
 }
 
-.edit-msg-btn {
+.user-context-menu {
+  background: var(--bg-color, #ffffff);
+  border: 1px solid var(--border-color, #e5e7eb);
+  border-radius: 16px;
+  padding: 8px;
+  width: 190px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.context-menu-item {
   background: transparent;
   border: none;
-  color: var(--text-sub);
-  font-size: 12px;
+  color: var(--text-main, #111827);
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 10px;
   cursor: pointer;
-  padding: 2px 6px;
-  border-radius: 4px;
-  transition: all 0.2s ease;
+  transition: background 0.2s;
+  width: 100%;
+  text-align: left;
 }
 
-.edit-msg-btn:hover {
-  background: var(--card-hover);
-  color: var(--text-main);
+.context-menu-item:hover, .context-menu-item:active {
+  background: var(--card-hover, #f3f4f6);
+}
+
+@keyframes fadeInOverlay {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
 }
 
 .edit-box-container {
@@ -471,7 +504,7 @@ body[data-theme="cyber"] .new-chat-btn {
   background: var(--accent-green);
   color: white;
   border: none;
-  padding: 4px 12px;
+  padding: 6px 14px;
   border-radius: 12px;
   font-size: 12px;
   cursor: pointer;
@@ -482,7 +515,7 @@ body[data-theme="cyber"] .new-chat-btn {
   background: transparent;
   border: 1px solid var(--border-color);
   color: var(--text-sub);
-  padding: 4px 12px;
+  padding: 6px 14px;
   border-radius: 12px;
   font-size: 12px;
   cursor: pointer;
@@ -865,5 +898,5 @@ main::-webkit-scrollbar-thumb {
 main::-webkit-scrollbar-track {
   background: rgba(0, 0, 0, 0.08) !important;
   border-radius: 4px !important;
-    }
+  }
   
