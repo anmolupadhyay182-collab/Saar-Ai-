@@ -94,7 +94,7 @@ searchChatsInput.addEventListener('input', (e) => {
   renderRecents(query);
 });
 
-// Render Sessions in Sidebar (UPDATED: Pinned chats on TOP)
+// Render Sessions in Sidebar (Pinned chats on TOP)
 function renderRecents(filterQuery = '') {
   recentsList.innerHTML = '';
 
@@ -107,8 +107,6 @@ function renderRecents(filterQuery = '') {
     return;
   }
 
-  // 📌 PINNED CHATS SORTING LOGIC ADDED HERE:
-  // Isse pinned chats automatic sabse top par aa jayenge
   filteredChats.sort((a, b) => {
     if (a.pinned && !b.pinned) return -1;
     if (!a.pinned && b.pinned) return 1;
@@ -167,8 +165,8 @@ function loadChatSession(id) {
   chatBox.innerHTML = '';
   if (welcomeScreen) welcomeScreen.style.display = 'none';
 
-  session.messages.forEach(msg => {
-    appendMessageUI(msg.sender, msg.content, false);
+  session.messages.forEach((msg, index) => {
+    appendMessageUI(msg.sender, msg.content, false, index);
   });
 
   renderRecents(searchChatsInput.value.toLowerCase().trim());
@@ -289,7 +287,7 @@ function highlightInElement(element, query) {
     NodeFilter.SHOW_TEXT,
     {
       acceptNode: function(node) {
-        if (node.parentNode.closest('pre') || node.parentNode.closest('button') || node.parentNode.closest('.msg-actions')) {
+        if (node.parentNode.closest('pre') || node.parentNode.closest('button') || node.parentNode.closest('.msg-actions') || node.parentNode.closest('.user-msg-actions')) {
           return NodeFilter.FILTER_REJECT;
         }
         return node.data.trim() ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
@@ -443,7 +441,8 @@ function toggleSpeechPausePlay() {
 audioToggleBtn.addEventListener('click', toggleSpeechPausePlay);
 closeAudioPlayerBtn.addEventListener('click', stopSpeech);
 
-function appendMessageUI(sender, content, isLoading = false) {
+/* MESSAGE UI RENDERING (WITH EDIT & REGENERATE FEATURES) */
+function appendMessageUI(sender, content, isLoading = false, msgIndex = null) {
   if (welcomeScreen) welcomeScreen.style.display = 'none';
 
   const msgRow = document.createElement('div');
@@ -468,6 +467,7 @@ function appendMessageUI(sender, content, isLoading = false) {
       const actionsDiv = document.createElement('div');
       actionsDiv.classList.add('msg-actions');
 
+      // Copy Button
       const copyBtn = document.createElement('button');
       copyBtn.classList.add('msg-action-btn');
       copyBtn.innerHTML = `<i class="fa-regular fa-copy"></i> Copy`;
@@ -480,6 +480,7 @@ function appendMessageUI(sender, content, isLoading = false) {
         });
       });
 
+      // Listen Button
       const listenBtn = document.createElement('button');
       listenBtn.classList.add('msg-action-btn');
       listenBtn.innerHTML = `<i class="fa-solid fa-volume-high"></i> Listen`;
@@ -487,12 +488,40 @@ function appendMessageUI(sender, content, isLoading = false) {
         startSpeech(content);
       });
 
+      // Regenerate Button
+      const regenBtn = document.createElement('button');
+      regenBtn.classList.add('msg-action-btn');
+      regenBtn.innerHTML = `<i class="fa-solid fa-rotate-right"></i> Regenerate`;
+      regenBtn.addEventListener('click', () => {
+        regenerateAiResponse(msgIndex);
+      });
+
       actionsDiv.appendChild(copyBtn);
       actionsDiv.appendChild(listenBtn);
+      actionsDiv.appendChild(regenBtn);
       msgContent.appendChild(actionsDiv);
     }
   } else {
-    msgContent.textContent = content;
+    // User Message Content & Edit Action
+    const textSpan = document.createElement('span');
+    textSpan.classList.add('user-text');
+    textSpan.textContent = content;
+    msgContent.appendChild(textSpan);
+
+    if (!isLoading) {
+      const userActions = document.createElement('div');
+      userActions.classList.add('user-msg-actions');
+
+      const editBtn = document.createElement('button');
+      editBtn.classList.add('edit-msg-btn');
+      editBtn.innerHTML = `<i class="fa-regular fa-pen-to-square"></i> Edit`;
+      editBtn.addEventListener('click', () => {
+        enableUserMessageEdit(msgContent, textSpan, content, msgIndex);
+      });
+
+      userActions.appendChild(editBtn);
+      msgContent.appendChild(userActions);
+    }
   }
 
   msgRow.appendChild(msgContent);
@@ -501,7 +530,139 @@ function appendMessageUI(sender, content, isLoading = false) {
   return { msgRow, msgContent };
 }
 
-/* UPDATED SEND MESSAGE WITH FULL CHAT CONTEXT/HISTORY SUPPORT */
+/* ✏️ USER MESSAGE EDIT FUNCTION */
+function enableUserMessageEdit(msgContent, textSpan, originalText, msgIndex) {
+  msgContent.innerHTML = `
+    <div class="edit-box-container">
+      <textarea class="edit-textarea">${originalText}</textarea>
+      <div class="edit-btn-group">
+        <button class="edit-cancel-btn">Cancel</button>
+        <button class="edit-save-btn">Save & Submit</button>
+      </div>
+    </div>
+  `;
+
+  const textarea = msgContent.querySelector('.edit-textarea');
+  const cancelBtn = msgContent.querySelector('.edit-cancel-btn');
+  const saveBtn = msgContent.querySelector('.edit-save-btn');
+
+  textarea.focus();
+  textarea.style.height = 'auto';
+  textarea.style.height = textarea.scrollHeight + 'px';
+
+  textarea.addEventListener('input', () => {
+    textarea.style.height = 'auto';
+    textarea.style.height = textarea.scrollHeight + 'px';
+  });
+
+  cancelBtn.addEventListener('click', () => {
+    reloadCurrentChatUI();
+  });
+
+  saveBtn.addEventListener('click', () => {
+    const updatedText = textarea.value.trim();
+    if (updatedText && updatedText !== originalText) {
+      resubmitUserMessage(msgIndex, updatedText);
+    } else {
+      reloadCurrentChatUI();
+    }
+  });
+}
+
+/* 🔄 RESUBMIT EDITED USER MESSAGE */
+async function resubmitUserMessage(msgIndex, newText) {
+  const activeSession = chats.find(c => c.id === currentChatId);
+  if (!activeSession) return;
+
+  if (msgIndex !== null && msgIndex >= 0) {
+    activeSession.messages[msgIndex].content = newText;
+    activeSession.messages = activeSession.messages.slice(0, msgIndex + 1);
+  } else {
+    activeSession.messages.push({ sender: 'user', content: newText });
+  }
+
+  saveChats();
+  reloadCurrentChatUI();
+
+  const { msgRow: loadingRow } = appendMessageUI('ai', '', true);
+
+  try {
+    const response = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        message: newText,
+        history: activeSession.messages
+      })
+    });
+
+    const data = await response.json();
+    loadingRow.remove();
+
+    let replyText = data.reply || ('⚠️ Error: ' + (data.error || 'Failed to generate response.'));
+
+    activeSession.messages.push({ sender: 'ai', content: replyText });
+    saveChats();
+
+    reloadCurrentChatUI();
+
+  } catch (err) {
+    loadingRow.remove();
+    appendMessageUI('ai', '⚠️ Error: ' + err.message);
+  }
+}
+
+/* 🔄 REGENERATE AI RESPONSE */
+async function regenerateAiResponse(aiMsgIndex) {
+  const activeSession = chats.find(c => c.id === currentChatId);
+  if (!activeSession) return;
+
+  let promptMessage = "";
+  if (aiMsgIndex !== null && aiMsgIndex > 0) {
+    activeSession.messages = activeSession.messages.slice(0, aiMsgIndex);
+    promptMessage = activeSession.messages[activeSession.messages.length - 1].content;
+  } else {
+    promptMessage = activeSession.messages[activeSession.messages.length - 1]?.content || "";
+  }
+
+  saveChats();
+  reloadCurrentChatUI();
+
+  const { msgRow: loadingRow } = appendMessageUI('ai', '', true);
+
+  try {
+    const response = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        message: promptMessage,
+        history: activeSession.messages
+      })
+    });
+
+    const data = await response.json();
+    loadingRow.remove();
+
+        let replyText = data.reply || ('⚠️ Error: ' + (data.error || 'Failed to generate response.'));
+
+    activeSession.messages.push({ sender: 'ai', content: replyText });
+    saveChats();
+
+    reloadCurrentChatUI();
+
+  } catch (err) {
+    loadingRow.remove();
+    appendMessageUI('ai', '⚠️ Error: ' + err.message);
+  }
+}
+
+function reloadCurrentChatUI() {
+  if (currentChatId) {
+    loadChatSession(currentChatId);
+  }
+}
+
+/* SEND MESSAGE WITH FULL CHAT CONTEXT/HISTORY SUPPORT */
 async function sendMessage(message) {
   if (!currentChatId) {
     currentChatId = 'chat_' + Date.now();
@@ -518,7 +679,8 @@ async function sendMessage(message) {
   saveChats();
   renderRecents(searchChatsInput.value.toLowerCase().trim());
 
-  appendMessageUI('user', message);
+  reloadCurrentChatUI();
+
   userInput.value = '';
   userInput.style.height = 'auto';
   sendBtn.disabled = true;
@@ -543,7 +705,7 @@ async function sendMessage(message) {
     activeSession.messages.push({ sender: 'ai', content: replyText });
     saveChats();
 
-    appendMessageUI('ai', replyText);
+    reloadCurrentChatUI();
 
   } catch (err) {
     loadingRow.remove();
@@ -566,7 +728,7 @@ exportChatBtn.addEventListener('click', () => {
   rows.forEach(row => {
     const isUser = row.classList.contains('user');
     const sender = isUser ? 'USER' : 'SAAR AI';
-    const text = row.querySelector('.msg-content').innerText.replace('Copy Code', '').replace('Copy', '').replace('Listen', '').trim();
+    const text = row.querySelector('.msg-content').innerText.replace('Copy Code', '').replace('Copy', '').replace('Listen', '').replace('Regenerate', '').replace('Edit', '').trim();
     chatHistory += `[${sender}]:\n${text}\n\n-----------------------------------------\n\n`;
   });
 
