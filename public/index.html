@@ -114,16 +114,18 @@
       <div class="welcome-screen" id="welcomeScreen">
         <div class="badge">⚡ Saar Superfast Ai</div>
         <h1 class="greeting-text">Hello, I'm SAAR AI.<br>How can I help you today?</h1>
-        <div class="suggestions">
-          <div class="suggestion-card" onclick="useSuggestion('Explain quantum computing simply')">
-            <div class="card-title">Explain quantum computing</div>
-            <div class="card-sub">In simple terms</div>
+        
+        <!-- Updated Quick Search Section -->
+        <div class="quick-search-container">
+          <div class="quick-search-row row-1">
+            <button class="search-chip" onclick="useSuggestion('Write a professional email')">✍️ Write a professional email</button>
+            <button class="search-chip" onclick="useSuggestion('Summarize this article')">📝 Summarize this article</button>
           </div>
-          <div class="suggestion-card" onclick="useSuggestion('Write a Python script for web scraping')">
-            <div class="card-title">Python web scraper</div>
-            <div class="card-sub">Code example</div>
+          <div class="quick-search-row row-2">
+            <button class="search-chip" onclick="useSuggestion('Tell me top historical events')">🌍 Top historical events</button>
           </div>
         </div>
+
       </div>
     </main>
 
