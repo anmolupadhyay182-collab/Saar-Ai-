@@ -954,9 +954,3 @@ main::-webkit-scrollbar-track {
 .context-menu-item:active {
   background: var(--card-hover, #e5e7eb);
 }
-/* Forcefully heavy blur ko disable karne ke liye */
-.chat-box, #chatBox, .main-container {
-  filter: none !important;
-  backdrop-filter: none !important;
-}
-
