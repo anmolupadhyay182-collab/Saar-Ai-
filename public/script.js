@@ -94,7 +94,7 @@ searchChatsInput.addEventListener('input', (e) => {
   renderRecents(query);
 });
 
-// Render Sessions in Sidebar
+// Render Sessions in Sidebar (UPDATED: Pinned chats on TOP)
 function renderRecents(filterQuery = '') {
   recentsList.innerHTML = '';
 
@@ -106,6 +106,14 @@ function renderRecents(filterQuery = '') {
     recentsList.innerHTML = `<div style="font-size: 13px; color: var(--text-sub); text-align: center; padding: 10px;">${filterQuery ? 'No chats found' : 'No recent chats'}</div>`;
     return;
   }
+
+  // 📌 PINNED CHATS SORTING LOGIC ADDED HERE:
+  // Isse pinned chats automatic sabse top par aa jayenge
+  filteredChats.sort((a, b) => {
+    if (a.pinned && !b.pinned) return -1;
+    if (!a.pinned && b.pinned) return 1;
+    return 0;
+  });
 
   filteredChats.forEach((chat) => {
     const item = document.createElement('div');
@@ -518,7 +526,6 @@ async function sendMessage(message) {
   const { msgRow: loadingRow } = appendMessageUI('ai', '', true);
 
   try {
-    // Single message ki jagah, active tab ki poori chat history server ko bhej rahe hain
     const response = await fetch('/api/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
